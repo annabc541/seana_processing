@@ -4,6 +4,9 @@ library(tidyr)
 library(zoo)
 library(glue)
 
+#again, just compiling surfmet and mvpos data, can't imagine it will change because the data won't change
+#and it has now been saved as a csv file so shouldn't need to do it again - will also be moved to the archive
+
 setwd('D:/Cruise/raw_data/met_data')
 Sys.setenv(TZ = 'UTC')
 

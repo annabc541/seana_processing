@@ -6,6 +6,8 @@ library(ggplot2)
 library(zoo)
 library(viridis)
 
+#just fixing timezone so it is all in UTC
+
 setwd('D:/Cruise/raw_data')
 Sys.setenv(TZ = 'UTC')
 

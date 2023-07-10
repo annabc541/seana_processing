@@ -61,6 +61,7 @@ rel_wind = rel_wind %>%
 # NOx zeroes --------------------------------------------------------------
 
 #applying zeroes to no and no2 - zeroes are means from zero cycles taken at each station
+#calculation can be ran again and double checked through nox_zeroes code
 dat = raw_data %>% 
   mutate(station = case_when(date < '2022-05-20 20:15' ~ 'Reykjavik',
                              between(date,as.POSIXct('2022-05-20 20:15:00'),as.POSIXct('2022-05-23 06:15:00')) ~ 'Sailing 1',
@@ -187,6 +188,12 @@ all_data = all_data %>%
 
 # Sampling ship stack -----------------------------------------------------
 
+#need to sort this out - can't find code used to flag ship stack by using numbers!
+#want the official ship stack flagging code to be in this script I reckon, but may be lost forever
+#I do have the dataset with the flags as numbers (flagged_data1.csv)
+#will have to see if it's simply a case of changing the labels or if more work was done
+#also have the manual_flagging dataset which can be cross referenced with this one and the number flag data
+
 #adding flag for sampling ship stack
 #ws and wd indicate that from ws and rel wd we are sampling Discovery's ship stack
 #other_ship indicates that we see a spike in nox, co and so2 -> sampling another ship's stack
@@ -301,7 +308,9 @@ write.csv(ship_filtering,'D:/Cruise/processed_data/SEANA_data.csv',row.names = F
 
 
 
-# Selecting zo2 data to figure out zeroes ---------------------------------
+# Selecting so2 parameters to figure out zeroes ---------------------------------
+
+#sent parameters to Katie, problem was due to pressure dependence of so2 measurements
 
 raw_data = read.csv("raw_data/raw_data.csv") %>% 
   mutate(date = ymd_hms(date)) %>% 

@@ -3,6 +3,11 @@ library(lubridate)
 library(tidyr)
 library(zoo)
 
+#ok so I think this code is for pulling together all the individual surfmet and mvpos data, which I had to 
+#separate into 5 folders due to my laptop's inability to process such large files
+#what is left here is just me pulling together the last set of surfmet files
+#will rename and move to archive, I don't think I will need to do this again since this data will not change
+
 setwd('D:/Cruise/raw_data/met_data/Surfmet')
 Sys.setenv(TZ = 'UTC')
 

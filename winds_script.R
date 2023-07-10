@@ -1,4 +1,5 @@
 #SEANA absolute winds from relative
+#read in compiled surfmet and mvpos data
 
 #read in
 met_data <- read.csv('D:/Cruise/raw_data/met_data.csv')
