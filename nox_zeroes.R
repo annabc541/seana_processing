@@ -6,7 +6,6 @@ library(ggplot2)
 library(zoo)
 library(viridis)
 
-setwd('D:/Cruise/raw_data')
 Sys.setenv(TZ = 'UTC')
 
 # Functions ---------------------------------------------------------------
@@ -28,7 +27,7 @@ tidy_rle = function(rleObj){
 
 #importing data
 
-raw_data = read.csv("raw_data.csv") %>% 
+raw_data = read.csv("data/measured_data.csv") %>% 
   mutate(date = ymd_hms(date),
          zero_box = ifelse(is.na(zero_box),0,zero_box),
          nox_cal = case_when(date > '2022-05-23 09:22' & date < '2022-05-23 09:44' ~ 1,

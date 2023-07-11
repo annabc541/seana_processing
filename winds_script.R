@@ -2,7 +2,7 @@
 #read in compiled surfmet and mvpos data
 
 #read in
-met_data <- read.csv('D:/Cruise/raw_data/met_data.csv')
+met_data <- read.csv('data/met_data.csv')
 met_data$...1 <-  NULL #remove surplus row names
 met_data <- na.omit(met_data) #remove rows with NAs
 
@@ -32,4 +32,4 @@ met_data$v <- met_data$v_rel+met_data$ship_motion_v
 #final speed:
 met_data$ws <- sqrt(met_data$u^2+met_data$v^2)
 
-write.csv(met_data, "D:/Cruise/processed_data/met_data_processed.csv", row.names = F)
+write.csv(met_data, "data/met_data_processed.csv", row.names = F)

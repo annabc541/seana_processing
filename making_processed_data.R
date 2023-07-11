@@ -6,7 +6,6 @@ library(janitor)
 library(openair)
 
 Sys.setenv(TZ = 'UTC')
-setwd('D:/Cruise')
 
 # Functions ---------------------------------------------------------------
 
@@ -26,23 +25,23 @@ tidy_rle = function(rleObj){
 # Reading in data ---------------------------------------------------------
 
 # Reading in NOx, NOy, O3 and SO2 data
-raw_data = read.csv("raw_data/raw_data.csv") %>% 
+raw_data = read.csv("data/measured_data.csv") %>% 
   mutate(date = ymd_hms(date)) %>% 
   mutate(date = round_date(date, "1 sec")) %>% 
   select(c(date,so2,noy,no,no2,zero_box,so2_zero_channel,o3))
 
 # Reading in CO data
-co_dat = read.csv('raw_data/CO/SEANA_CO.csv') %>%
+co_dat = read.csv('data/co_data.csv') %>%
   mutate(date = ymd_hms(date),
          date = round_date(date, "1 sec")) %>% 
   filter(date < '2022-06-22 10:13') %>% 
   select(c(date,co = co_calibrated))
 
 # Reading in met data
-met_data = read.csv('processed_data/met_data_processed.csv') %>% 
+met_data1 = read.csv('data/met_data_processed.csv') %>% 
   mutate(date = ymd_hms(date))
 
-# Correcting data ------------------------------------------------------
+# Wind data ------------------------------------------------------
 
 #averaging true and rel wind using openair's vectorised wind calculation
 true_wind = met_data[,c("date","lat","long","speed","heading","air_temp","air_humidity","true_wd","ws","u","v")]
@@ -188,15 +187,11 @@ all_data = all_data %>%
 
 # Sampling ship stack -----------------------------------------------------
 
-#need to sort this out - can't find code used to flag ship stack by using numbers!
-#want the official ship stack flagging code to be in this script I reckon, but may be lost forever
-#I do have the dataset with the flags as numbers (flagged_data1.csv)
-#will have to see if it's simply a case of changing the labels or if more work was done
-#also have the manual_flagging dataset which can be cross referenced with this one and the number flag data
-
 #adding flag for sampling ship stack
 #ws and wd indicate that from ws and rel wd we are sampling Discovery's ship stack
 #other_ship indicates that we see a spike in nox, co and so2 -> sampling another ship's stack
+#nox_spike indicates spike only in nox (above 1ppb considered a spike)
+
 ship_filtering = all_data %>% 
   mutate(ws = ifelse(between(date,as.POSIXct('2022-06-10 06:00'),as.POSIXct('2022-06-10 12:30')),NA,ws),
          stack_flag = case_when(rel_ws < 2.5 ~ "ws",
@@ -204,7 +199,6 @@ ship_filtering = all_data %>%
                                 between(date,as.POSIXct('2022-05-20 19:30'),as.POSIXct('2022-05-20 20:35')) ~ "ws",
                                 between(date,as.POSIXct('2022-05-22 19:50'),as.POSIXct('2022-05-22 23:45')) ~ "other_ship",
                                 between(date,as.POSIXct('2022-05-23 00:55'),as.POSIXct('2022-05-23 01:37')) ~ "nox_spike",
-                                between(date,as.POSIXct('2022-05-23 15:00'),as.POSIXct('2022-05-23 17:00')) ~ "ws",
                                 between(date,as.POSIXct('2022-05-25 15:15'),as.POSIXct('2022-05-25 17:17')) ~ "nox_spike",
                                 between(date,as.POSIXct('2022-05-28 07:45'),as.POSIXct('2022-05-28 12:00')) ~ "nox_spike",
                                 between(date,as.POSIXct('2022-05-29 01:09'),as.POSIXct('2022-05-29 01:42')) ~ "nox_spike",
@@ -215,36 +209,35 @@ ship_filtering = all_data %>%
                                 between(date,as.POSIXct('2022-05-29 20:05'),as.POSIXct('2022-05-29 20:45')) ~ "nox_spike",
                                 between(date,as.POSIXct('2022-05-29 23:20'),as.POSIXct('2022-05-29 23:40')) ~ "nox_spike",
                                 between(date,as.POSIXct('2022-05-30 06:25'),as.POSIXct('2022-05-30 08:05')) ~ "other_ship",
-                                between(date,as.POSIXct('2022-05-30 09:15'),as.POSIXct('2022-05-30 10:00')) ~ "ws",
                                 between(date,as.POSIXct('2022-05-30 10:45'),as.POSIXct('2022-05-30 11:45')) ~ "wd",
                                 between(date,as.POSIXct('2022-05-30 13:30'),as.POSIXct('2022-05-30 19:30')) ~ "nox_spike",
                                 between(date,as.POSIXct('2022-05-31 07:57'),as.POSIXct('2022-05-31 09:35')) ~ "ws",
+                                between(date,as.POSIXct('2022-06-01 00:57'),as.POSIXct('2022-06-01 01:22')) ~ "nox_spike",
                                 between(date,as.POSIXct('2022-06-01 06:00'),as.POSIXct('2022-06-01 18:00')) ~ "ws",
-                                between(date,as.POSIXct('2022-06-02 07:15'),as.POSIXct('2022-06-02 07:36')) ~ "other_ship",
-                                between(date,as.POSIXct('2022-06-02 09:00'),as.POSIXct('2022-06-03 04:00')) ~ "ws",
-                                between(date,as.POSIXct('2022-06-03 06:00'),as.POSIXct('2022-06-03 08:00')) ~ "ws",
+                                between(date,as.POSIXct('2022-06-02 07:15'),as.POSIXct('2022-06-03 04:00')) ~ "ws",
+                                between(date,as.POSIXct('2022-06-03 06:00'),as.POSIXct('2022-06-03 09:00')) ~ "ws",
+                                between(date,as.POSIXct('2022-06-03 19:00'),as.POSIXct('2022-06-03 21:00')) ~ "wd",
                                 between(date,as.POSIXct('2022-06-03 15:55'),as.POSIXct('2022-06-03 16:20')) ~ "nox_spike",
                                 between(date,as.POSIXct('2022-06-03 17:00'),as.POSIXct('2022-06-03 17:26')) ~ "nox_spike",
-                                between(date,as.POSIXct('2022-06-03 19:00'),as.POSIXct('2022-06-04 02:00')) ~ "ws",
+                                between(date,as.POSIXct('2022-06-03 23:15'),as.POSIXct('2022-06-04 02:00')) ~ "ws",
                                 between(date,as.POSIXct('2022-06-04 07:30'),as.POSIXct('2022-06-04 08:00')) ~ "nox_spike",
                                 between(date,as.POSIXct('2022-06-04 11:45'),as.POSIXct('2022-06-04 11:53')) ~ "ws",
-                                between(date,as.POSIXct('2022-06-04 12:25'),as.POSIXct('2022-06-04 14:08')) ~ "ws",
-                                between(date,as.POSIXct('2022-06-04 16:00'),as.POSIXct('2022-06-04 20:00')) ~ "ws",
-                                between(date,as.POSIXct('2022-06-04 20:00'),as.POSIXct('2022-06-04 22:25')) ~ "other_ship",
+                                between(date,as.POSIXct('2022-06-04 13:15'),as.POSIXct('2022-06-04 14:00')) ~ "ws",
+                                between(date,as.POSIXct('2022-06-04 13:00'),as.POSIXct('2022-06-04 22:23')) ~ "ws",
                                 between(date,as.POSIXct('2022-06-05 03:10'),as.POSIXct('2022-06-05 03:23')) ~ "nox_spike",
                                 between(date,as.POSIXct('2022-06-05 08:00'),as.POSIXct('2022-06-05 10:31')) ~ "nox_spike",
-                                between(date,as.POSIXct('2022-06-05 11:15'),as.POSIXct('2022-06-05 11:55')) ~ "ws",
                                 between(date,as.POSIXct('2022-06-06 03:15'),as.POSIXct('2022-06-06 03:35')) ~ "nox_spike",
                                 between(date,as.POSIXct('2022-06-06 11:24'),as.POSIXct('2022-06-06 11:34')) ~ "nox_spike",
-                                between(date,as.POSIXct('2022-06-06 16:25'),as.POSIXct('2022-06-06 16:39')) ~ "nox_spike",
+                                between(date,as.POSIXct('2022-06-06 16:29'),as.POSIXct('2022-06-06 16:39')) ~ "nox_spike",
                                 between(date,as.POSIXct('2022-06-06 17:05'),as.POSIXct('2022-06-06 17:28')) ~ "nox_spike",
                                 between(date,as.POSIXct('2022-06-06 23:30'),as.POSIXct('2022-06-07 02:30')) ~ "other_ship",
                                 between(date,as.POSIXct('2022-06-07 04:02'),as.POSIXct('2022-06-07 04:25')) ~ "other_ship",
-                                between(date,as.POSIXct('2022-06-07 10:30'),as.POSIXct('2022-06-07 11:50')) ~ "nox_spike",
+                                between(date,as.POSIXct('2022-06-07 10:30'),as.POSIXct('2022-06-07 10:58')) ~ "nox_spike",
+                                between(date,as.POSIXct('2022-06-07 11:11'),as.POSIXct('2022-06-07 11:30')) ~ "nox_spike",
+                                between(date,as.POSIXct('2022-06-07 11:40'),as.POSIXct('2022-06-07 11:50')) ~ "nox_spike",
                                 between(date,as.POSIXct('2022-06-07 21:05'),as.POSIXct('2022-06-07 23:00')) ~ "other_ship",
                                 between(date,as.POSIXct('2022-06-08 01:07'),as.POSIXct('2022-06-08 01:27')) ~ "other_ship",
                                 between(date,as.POSIXct('2022-06-08 02:23'),as.POSIXct('2022-06-08 02:45')) ~ "other_ship",
-                                between(date,as.POSIXct('2022-06-08 03:13'),as.POSIXct('2022-06-08 10:00')) ~ "ws",
                                 between(date,as.POSIXct('2022-06-08 10:30'),as.POSIXct('2022-06-08 17:15')) ~ "nox_spike",
                                 between(date,as.POSIXct('2022-06-09 07:40'),as.POSIXct('2022-06-09 08:40')) ~ "nox_spike",
                                 between(date,as.POSIXct('2022-06-09 13:35'),as.POSIXct('2022-06-09 14:35')) ~ "other_ship",
@@ -256,9 +249,23 @@ ship_filtering = all_data %>%
                                 between(date,as.POSIXct('2022-06-14 18:40'),as.POSIXct('2022-06-14 21:00')) ~ "nox_spike",
                                 between(date,as.POSIXct('2022-06-15 05:10'),as.POSIXct('2022-06-15 05:48')) ~ "nox_spike",
                                 between(date,as.POSIXct('2022-06-15 13:05'),as.POSIXct('2022-06-15 14:35')) ~ "other_ship",
-                                TRUE ~ "no"))
+                                TRUE ~ "no"),
+         stack_flag = case_when(stack_flag == "no" ~ 0,
+                                stack_flag == "ws" ~ 1,
+                                stack_flag == "wd" ~ 2,
+                                stack_flag == "other_ship" ~ 3,
+                                stack_flag == "nox_spike" ~ 4))
 
-write.csv(ship_filtering,'D:/Cruise/processed_data/SEANA_data.csv',row.names = FALSE)
+#stack_flag = 0, data is good
+#stack_flag = 1, data has been flagged because RWS is below 2.5 m/s
+  #If the RWS was not below 2.5 for the duration of the spike in NOx/CO/SO2, it was extended manually to cover the whole spike
+#stack_flag = 2, data has been flagged because RWD is between 157.5 and 202.5 degrees (45 degree angle around 180)
+  #As above with the RWS, this flag was manually extended to cover the whole spike
+#stack_flag = 3, data has been flagged because there is a spike in NOx, CO and SO2 (spike not always seen in SO2)
+#stack_flag = 4, data has been flagged because there is a spike in NOx (but not in CO or SO2) - all spikes in NOx greater than 1 ppb considered anthropogenic
+
+
+write.csv(ship_filtering,'output/all_data_flagged_one_min.csv',row.names = FALSE)
 
 # Hourly data -------------------------------------------------------------
 
