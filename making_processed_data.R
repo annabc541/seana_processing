@@ -38,7 +38,7 @@ co_dat = read.csv('data/co_data.csv') %>%
   select(c(date,co = co_calibrated))
 
 # Reading in met data
-met_data1 = read.csv('data/met_data_processed.csv') %>% 
+met_data = read.csv('data/met_data_processed.csv') %>% 
   mutate(date = ymd_hms(date))
 
 # Wind data ------------------------------------------------------
@@ -265,13 +265,14 @@ ship_filtering = all_data %>%
 #stack_flag = 4, data has been flagged because there is a spike in NOx (but not in CO or SO2) - all spikes in NOx greater than 1 ppb considered anthropogenic
 
 
-write.csv(ship_filtering,'output/all_data_flagged_one_min.csv',row.names = FALSE)
+# write.csv(ship_filtering,'output/all_data_flagged_one_min.csv',row.names = FALSE)
 
 # Hourly data -------------------------------------------------------------
 
+#no work done on lod or errors yet -> be aware that NOx lod is 0.025ppb and SO2 lod is 0.04ppb
+
 hourly = ship_filtering %>% 
-  filter(flag_all == 0,
-         stack_flag == "no") %>% 
+  filter(flag_all == 0) %>% 
   mutate(co = ifelse(co_flag != 0,NA_real_,co),
          no = case_when(nox_flag != 0 ~ NA_real_,
                         nox_cal != 0 ~ NA_real_,
@@ -291,57 +292,59 @@ hourly = ship_filtering %>%
                    TRUE ~ noy),
          o3 = ifelse(o3_flag != 0,NA_real_,o3))
 
+#shared with ZB
 hourly = hourly %>% 
   timeAverage(avg.time = "hour",vector.ws = TRUE) %>% 
-  mutate(
-  station = case_when(date < '2022-05-20 20:15' ~ 'Reykjavik',
-                      between(date,as.POSIXct('2022-05-20 20:15:00'),as.POSIXct('2022-05-23 06:15:00')) ~ 'Sailing',
-                      between(date,as.POSIXct('2022-05-23 06:15:00'),as.POSIXct('2022-05-26 00:00')) ~ 'East Greenland',
-                      between(date,as.POSIXct('2022-05-26 00:00'),as.POSIXct('2022-05-28 12:00')) ~ 'Sailing',
-                      between(date,as.POSIXct('2022-05-28 12:00'),as.POSIXct('2022-05-31 08:00')) ~ 'Nuuk',
-                      between(date,as.POSIXct('2022-05-31 08:00'),as.POSIXct('2022-06-01 08:00')) ~ 'Sailing',
-                      between(date,as.POSIXct('2022-06-01 08:00'),as.POSIXct('2022-06-03 07:00')) ~ 'Maniitsoq 1',
-                      between(date,as.POSIXct('2022-06-03 07:00'),as.POSIXct('2022-06-03 20:00')) ~ 'Sailing',
-                      between(date,as.POSIXct('2022-06-03 20:00'),as.POSIXct('2022-06-04 20:00')) ~ 'Sisimiut',
-                      between(date,as.POSIXct('2022-06-04 20:00'),as.POSIXct('2022-06-05 11:00')) ~ 'Sailing',
-                      between(date,as.POSIXct('2022-06-05 11:00'),as.POSIXct('2022-06-06 10:30')) ~ 'Disko Bay',
-                      between(date,as.POSIXct('2022-06-06 10:30'),as.POSIXct('2022-06-06 18:30')) ~ 'Sailing',
-                      between(date,as.POSIXct('2022-06-06 18:30'),as.POSIXct('2022-06-12 23:55')) ~ 'Sea ice',
-                      between(date,as.POSIXct('2022-06-12 23:55'),as.POSIXct('2022-06-13 21:00')) ~ 'Sailing',
-                      between(date,as.POSIXct('2022-06-13 21:00'),as.POSIXct('2022-06-16 09:00')) ~ 'Maniitsoq 2',
-                      date > '2022-06-16 09:00' ~ 'Sailing home'))
+  select(date,co_ppb = co, so2_ppb = so2,noy_ppb = noy,o3_ppb = o3,no_ppb = no,no2_ppb = no2,nox_ppb = nox,stack_flag)
+  # mutate(
+  # station = case_when(date < '2022-05-20 20:15' ~ 'Reykjavik',
+  #                     between(date,as.POSIXct('2022-05-20 20:15:00'),as.POSIXct('2022-05-23 06:15:00')) ~ 'Sailing',
+  #                     between(date,as.POSIXct('2022-05-23 06:15:00'),as.POSIXct('2022-05-26 00:00')) ~ 'East Greenland',
+  #                     between(date,as.POSIXct('2022-05-26 00:00'),as.POSIXct('2022-05-28 12:00')) ~ 'Sailing',
+  #                     between(date,as.POSIXct('2022-05-28 12:00'),as.POSIXct('2022-05-31 08:00')) ~ 'Nuuk',
+  #                     between(date,as.POSIXct('2022-05-31 08:00'),as.POSIXct('2022-06-01 08:00')) ~ 'Sailing',
+  #                     between(date,as.POSIXct('2022-06-01 08:00'),as.POSIXct('2022-06-03 07:00')) ~ 'Maniitsoq 1',
+  #                     between(date,as.POSIXct('2022-06-03 07:00'),as.POSIXct('2022-06-03 20:00')) ~ 'Sailing',
+  #                     between(date,as.POSIXct('2022-06-03 20:00'),as.POSIXct('2022-06-04 20:00')) ~ 'Sisimiut',
+  #                     between(date,as.POSIXct('2022-06-04 20:00'),as.POSIXct('2022-06-05 11:00')) ~ 'Sailing',
+  #                     between(date,as.POSIXct('2022-06-05 11:00'),as.POSIXct('2022-06-06 10:30')) ~ 'Disko Bay',
+  #                     between(date,as.POSIXct('2022-06-06 10:30'),as.POSIXct('2022-06-06 18:30')) ~ 'Sailing',
+  #                     between(date,as.POSIXct('2022-06-06 18:30'),as.POSIXct('2022-06-12 23:55')) ~ 'Sea ice',
+  #                     between(date,as.POSIXct('2022-06-12 23:55'),as.POSIXct('2022-06-13 21:00')) ~ 'Sailing',
+  #                     between(date,as.POSIXct('2022-06-13 21:00'),as.POSIXct('2022-06-16 09:00')) ~ 'Maniitsoq 2',
+  #                     date > '2022-06-16 09:00' ~ 'Sailing home'))
 
-write.csv(ship_filtering,'D:/Cruise/processed_data/SEANA_data.csv',row.names = FALSE)
-
-
-
-# Selecting so2 parameters to figure out zeroes ---------------------------------
-
-#sent parameters to Katie, problem was due to pressure dependence of so2 measurements
-
-raw_data = read.csv("raw_data/raw_data.csv") %>% 
-  mutate(date = ymd_hms(date)) %>% 
-  mutate(date = round_date(date, "1 sec"))
+# write.csv(hourly,'output/hourly_data.csv',row.names = FALSE)
 
 
-so2_seana = raw_data %>% 
-  select(date,so2,
-         samp_pressure = t101_022639_samppress,
-         samp_flow = t101_022639_sampflow,
-         rcell_temp = t101_022639_rcelltemp,
-         box_temp = t101_022639_boxtemp,
-         pmt_temp = t101_022639_pmttemp,
-         conv_temp = t101_022639_convtemp,
-         so2_zero_channel)
 
-write.csv(so2_seana,"so2_seana.csv",row.names = FALSE)
-
-so2_seana_flags = ship_filtering %>% 
-  mutate(flag = case_when(flag_all == 1 ~ 1,
-                          so2_flag == 1 ~ 1,
-                          TRUE ~ 0),
-         ship_flag = case_when(stack_flag == "no" ~ 0,
-                                     TRUE ~ 1)) %>% 
-  select(date,so2,so2_zero_channel,flag,ship_flag)
-
-write.csv(so2_seana_flags,"so2_seana_flags.csv",row.names = FALSE)
+# # Selecting so2 parameters to figure out zeroes ---------------------------------
+# 
+# #sent parameters to Katie, problem was due to pressure dependence of so2 measurements
+# 
+# raw_data = read.csv("raw_data/raw_data.csv") %>% 
+#   mutate(date = ymd_hms(date)) %>% 
+#   mutate(date = round_date(date, "1 sec"))
+# 
+# 
+# so2_seana = raw_data %>% 
+#   select(date,so2,
+#          samp_pressure = t101_022639_samppress,
+#          samp_flow = t101_022639_sampflow,
+#          rcell_temp = t101_022639_rcelltemp,
+#          box_temp = t101_022639_boxtemp,
+#          pmt_temp = t101_022639_pmttemp,
+#          conv_temp = t101_022639_convtemp,
+#          so2_zero_channel)
+# 
+# write.csv(so2_seana,"so2_seana.csv",row.names = FALSE)
+# 
+# so2_seana_flags = ship_filtering %>% 
+#   mutate(flag = case_when(flag_all == 1 ~ 1,
+#                           so2_flag == 1 ~ 1,
+#                           TRUE ~ 0),
+#          ship_flag = case_when(stack_flag == "no" ~ 0,
+#                                      TRUE ~ 1)) %>% 
+#   select(date,so2,so2_zero_channel,flag,ship_flag)
+# 
+# write.csv(so2_seana_flags,"so2_seana_flags.csv",row.names = FALSE)
